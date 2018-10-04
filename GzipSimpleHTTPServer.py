@@ -1,6 +1,6 @@
 """Simple HTTP Server.
 
-This module builds on BaseHTTPServer by implementing the standard GET
+This module builds on HTTPServer by implementing the standard GET
 and HEAD requests in a fairly straightforward manner.
 
 """
@@ -12,18 +12,20 @@ __all__ = ["SimpleHTTPRequestHandler"]
 
 import os
 import posixpath
-import BaseHTTPServer
+from http.server import HTTPServer as BaseHTTPServer
+from http.server import SimpleHTTPRequestHandler
 import urllib
 import cgi
 import sys
 import mimetypes
 import zlib
 from optparse import OptionParser
+from io import StringIO
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+#try:
+#    from cStringIO import StringIO
+#except ImportError:
+#    from StringIO import StringIO
 
 SERVER_PORT = 8000
 encoding_type = 'gzip'
@@ -68,7 +70,7 @@ def gzip_encode(content):
     return data
 
 
-class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class SimpleHTTPRequestHandler(SimpleHTTPRequestHandler):
     """Simple HTTP request handler with GET and HEAD commands.
 
     This serves files from the current directory and any of its
@@ -121,11 +123,16 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             else:
                 return self.list_directory(path).read()
         ctype = self.guess_type(path)
+        staticcf=False
         try:
             # Always read in binary mode. Opening files in text mode may cause
             # newline translations, making the actual size of the content
             # transmitted *less* than the content-length!
-            f = open(path, 'rb')
+            if os.path.exists(path+".gz"):
+                staticcf=True
+                f=open(path+".gz",'rb')
+            else:
+                f = open(path, 'rb')
         except IOError:
             self.send_error(404, "File not found")
             return None
@@ -137,12 +144,13 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         content = f.read()
 
         # Encode content based on runtime arg
-        if encoding_type == "gzip":
-            content = gzip_encode(content)
-        elif encoding_type == "deflate":
-            content = deflate_encode(content)
-        elif encoding_type == "zlib":
-            content = zlib_encode(content)
+        if not staticcf:
+            if encoding_type == "gzip":
+                content = gzip_encode(content)
+            elif encoding_type == "deflate":
+                content = deflate_encode(content)
+            elif encoding_type == "zlib":
+                content = zlib_encode(content)
 
         compressed_content_length = len(content)
         f.close()
@@ -166,7 +174,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             return None
         list.sort(key=lambda a: a.lower())
         f = StringIO()
-        displaypath = cgi.escape(urllib.unquote(self.path))
+        displaypath = cgi.escape(urllib.parse.unquote(self.path))
         f.write('<!DOCTYPE html>')
         f.write("<html>\n<title>Directory listing for %s</title>\n" % displaypath)
         f.write("<body>\n<h2>Directory listing for %s</h2>\n" % displaypath)
@@ -204,7 +212,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # abandon query parameters
         path = path.split('?',1)[0]
         path = path.split('#',1)[0]
-        path = posixpath.normpath(urllib.unquote(path))
+        path = posixpath.normpath(urllib.parse.unquote(path))
         words = path.split('/')
         words = filter(None, words)
         path = os.getcwd()
@@ -251,7 +259,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 def test(HandlerClass = SimpleHTTPRequestHandler,
-         ServerClass = BaseHTTPServer.HTTPServer):
+         ServerClass = BaseHTTPServer):
     """Run the HTTP request handler class.
 
     This runs an HTTP server on port 8000 (or the first command line
@@ -264,10 +272,11 @@ def test(HandlerClass = SimpleHTTPRequestHandler,
     server_address = ('0.0.0.0', SERVER_PORT)
 
     SimpleHTTPRequestHandler.protocol_version = "HTTP/1.0"
-    httpd = BaseHTTPServer.HTTPServer(server_address, SimpleHTTPRequestHandler)
+    httpd = BaseHTTPServer(server_address, SimpleHTTPRequestHandler)
 
     sa = httpd.socket.getsockname()
-    print "Serving HTTP on", sa[0], "port", sa[1], "..."
+    #print "Serving HTTP on", sa[0], "port", sa[1], "..."
+    print("Serving HTTP on", sa[0], "port", sa[1], "...")
     httpd.serve_forever()
     BaseHTTPServer.test(HandlerClass, ServerClass)
 
