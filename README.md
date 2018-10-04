@@ -1,30 +1,16 @@
 GzipSimpleHTTPServer
 ====================
-Python 2.x
-
+Python 3.x ported (thanks for the help https://github.com/rdenadai) ! 
+ 
 A simple modification of the very useful SimpleHTTPServer python script originally made to add gzip compression. It now supports gzip, zlib, and deflate with gzip as the implicit default.
 
-## Usage
+### Static gzip file support added
+If you have large files and do not want that the server performs the compression on a per-request basis, you need to compress these files and save them with the same name as the original file by adding the text ".gz" at the end, so the server will give preference to these files files instead of redoing the compression.
 
-### Docker
-#### Use latest from Docker Hub
-Navigate to folder you want to share files from.
-
-````
-docker run -v $PWD:/tmp/share -p 8000:8000 ksmithorn97/gzip-http-file-server
-````
-Alternativly change $PWD to the folder you want to share.
-
-#### Local Docker
-````
-docker-compose up
-````
-Automatically shares files in the share folder.
-
-### With Python 2.x
+### With Python 3.x
 
 ````
-python GzipSimpleHTTPServer.py
+python3 GzipSimpleHTTPServer.py
 ````
 
 This will start a localhost server on port 8000. You should see this in your terminal:
