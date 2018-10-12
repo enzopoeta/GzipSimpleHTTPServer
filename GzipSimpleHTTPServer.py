@@ -19,8 +19,10 @@ import cgi
 import sys
 import mimetypes
 import zlib
+#import urllib.parse
 from optparse import OptionParser
 from io import StringIO
+
 
 #try:
 #    from cStringIO import StringIO
@@ -88,6 +90,8 @@ class SimpleHTTPRequestHandler(SimpleHTTPRequestHandler):
         """Serve a GET request."""
         content = self.send_head()
         if content:
+            if type(content) is str:
+                content=content.encode("utf-8")
             self.wfile.write(content)
 
     def do_HEAD(self):
@@ -190,7 +194,7 @@ class SimpleHTTPRequestHandler(SimpleHTTPRequestHandler):
                 displayname = name + "@"
                 # Note: a link to a directory displays with @ and links with /
             f.write('<li><a href="%s">%s</a>\n'
-                    % (urllib.quote(linkname), cgi.escape(displayname)))
+                    % (urllib.parse.quote(linkname), cgi.escape(displayname)))
         f.write("</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
